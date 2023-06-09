@@ -1,0 +1,220 @@
+---
+title: "Ev Fiyat Tahmini"
+author: 
+  - Hilal Avşar[^1]
+bibliography: ../bibliography/biblio.bib
+csl: ../csl/apa-tr.csl
+header-includes:
+
+  - \usepackage{booktabs}
+  - \usepackage{caption} 
+  - \captionsetup[table]{skip=10pt}
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    fig_height: 3
+    fig_width: 4
+    keep_tex: no
+    latex_engine: xelatex
+    number_sections: yes
+    toc: no
+geometry: margin=1in
+link-citations: yes
+urlcolor: blue
+fontsize: 12pt
+biblio-style: apalike
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
+library(dplyr)
+library(ggplot2)
+library(gtsummary)
+library(kableExtra)
+library(knitr)
+library(summarytools)
+```
+
+<!-- ======================================================================= -->
+<!-- ============================== NOTLAR ================================= -->
+<!-- ======================================================================= -->
+[^1]: 21080201, [Github Repo](https://github.com/hilalavsarr/final)
+
+# Giriş
+Ev fiyatları tahmini, gayrimenkul piyasasında önemli bir rol oynamaktadır. Emlak sektöründe, ev fiyatları tahmini, birçok farklı faktörü dikkate alarak bir evin değerini belirlemek için kullanılmaktadır. Bu faktörler arasında evin konumu, büyüklüğü, yaşına ve özelliklerine, konut piyasasının durumuna, faiz oranlarına, vergi politikalarına ve benzeri faktörlere bağlı olarak değişiklik gösterebilir.  Genelde emlak sektöründe çalışan ve tecrübe sahibi kişilerin sezgisel olarak yaptıkları tahminler yanında günümüzde ev özellikleri ve fiyatları hakkında bilginin özellikle internette olması nedeniyle artık daha bilimsel yöntemlerle ev fiyatı tahmini yapılabilmektedir.
+
+Ev fiyatları tahmini için birçok farklı model kullanılabilir. Bu modeller arasında en yaygın olanı regresyon analizidir. Regresyon analizi, ev fiyatlarındaki değişkenliği, büyüklük, bulunduğu kat, ısınma şekli, toplu ulaşıma yakınlık gibi ev özellikleri ile tahmin etmeye çalışır. Bu modelleme yöntemi, ev özellikleri, coğrafi faktörler ve ekonomik göstergeler gibi birçok değişkeni de kullanarak ev fiyatlarını tahmin etmek için kullanılabilir.  Regresyon tahminleri en temel regresyon yöntemi olan linear regresyondan daha gelişmiş makine öğrenmesi modellerine kadar birçok farklı metodla da yapılabilir.
+
+Ev fiyatları tahmini için kullanılan diğer bir modelleme yöntemi, yapay sinir ağıdır. Yapay sinir ağı, birçok farklı değişkeni kullanarak karmaşık bir model oluşturur ve bu modeli kullanarak ev fiyatlarını tahmin eder. Bu yöntem, regresyon analizine göre daha karmaşık olmasına rağmen, daha doğru sonuçlar verebilir çünki regresyon analizlerinde genelde değişkenlerin fazlalılığı nedeniyle göz ardı edilen etkileşimler yapay sinir ağları ile daha rahat çözümlenebilir.
+
+Ev fiyatları tahmini modelleme, gayrimenkul sektöründe büyük öneme sahip bir konudur. Regresyon analizi ve yapay sinir ağı gibi farklı modelleme yöntemleri kullanılarak ev fiyatları tahmini yapılabilir. Ancak, modelin doğruluğu için kullanılan verilerin kalitesi çok önemlidir
+
+## Çalışmanın Amacı
+
+Çalışmanın amacı, ev özellikleri verilen bir versietinde, bu özellikleri kullanarak ev fiyatını tahmin etmektir.  İstatistiksel yöntem olarak multipl lineer regresyon kullanılacaktır.  Veriseti Carnegie Mellon Universitesi'nden alınmıştır (boston).  Veriseti biri bağımlı, 13’ü bağımsız olmak üzere toplamda 14 değişken içermektedir.  Gözlem sayısı fazla olması nedeniyle 220 gözleme indirilmiştir.     
+
+## Literatür 
+Literatürde ev fiyatı tahmini üzerine kullanılan tekniklerin çeşitliliği nedeniyle birçok çalışma vardır.  Verisetinin çalışıldığı makalede havakirliliğinin ev fiyatlarını etkileyen önemli bir faktör olduğu bulunmuştur (harrison1978hedonic).  Bir başka çalışmada ise ev fiyat tahmininde en doğru sonucu veren metod araştırılmış ve gradient boosting metodunun lineer regresyon, lasso regresyon, ridge regresyon gibi metodlara göre daha doğru tahminde bulunduğu görülmüştür (madhuri2019house).  Ülkemizden yayınlanan iki çalışmada ise yapay sinir ağlarının ev fiyat tahmininde en doğru sonuçları verdikleri görülmüştür (Ozdemir2022-vc, yilmazel2018konut) 
+
+# Veriseti
+
+Çalışmada kullanılan veriseti incelendiğinde 200 gözlem ve 14 değişkene sahip olduğu görülmektedir.  
+
+Verisetindeki değişkenler incelendiğinde bağımlı değişkenin (medv) ev fiyatlarının median değeri (1000 dolar katı olarak) olduğu görülmüştür.  13 bağımsız değişkenden sayısal kodlu olmayanlar sayısala çevrildiğinde eksik gözlem sayısına bakıldı.  26 eksik veri olduğu görüldüğünden bu eksik verilere sahip gözlemler çalışma dışında bırakıldı ve geriye 188 gözlem kaldığı görüldü.  1 bağımsız değişken (chas) kategorik kodlandığı görüldü.
+
+Bağımsız sayısal değişkenler şunlardır:
+
+crim: kişi başına düşen suç oranı 
+
+zn: 25.000 fit karenin üzerindeki parseller için imarlı meskun arazi oranı.
+
+indus: kasaba başına perakende olmayan iş alanlarının oranı
+
+nox: nitrik oksit konsantrasyonu (10 milyonda parça)
+
+rm: konut başına düşen ortalama oda sayısı
+
+age: 1940'tan önce inşa edilen sahibi tarafından kullanılan birimlerin oranı
+
+dis: beş Boston istihdam merkezine ağırlıklı mesafeler
+
+rad: radyal otoyollara erişilebilirlik indeksi
+
+tax: 10.000 $ başına tam değerli emlak vergisi oranı
+
+ptratio: şehre göre öğrenci-öğretmen oranı
+
+b: 1000(Bk - 0.63)^2 burada Bk, şehre göre siyahların oranıdır
+
+lstat: Nüfusun % alt durumu
+
+```{r,echo=FALSE,warning=FALSE,results=FALSE}
+library(readxl)
+data <- read.csv("c:/datasets/boston.csv",sep = ",")
+head(data)
+str(data)
+
+data$crim <- as.numeric(data$crim)
+data$rm <- as.numeric(data$rm)
+data$tax <- as.numeric(data$tax)
+
+sum(is.na(data))
+data <- na.omit(data)
+
+```
+
+Sayısal değişkenlerin özet istatistikleri Tablo 1'de gösterilmektedir.   
+
+```{r,echo=FALSE,results=FALSE}
+numerik <- data %>% select(-c(chas, medv)) %>% 
+  descr(transpose=TRUE,stats=c("mean","sd","med","min","max"))
+```
+
+```{r,echo=FALSE}
+tablo1 <-kable(numerik,col.names=c("Ortalama","Standard Deviasyon","Ortanca","Min","Maks"),caption="Sayısal Verilerin Özet İstatistikleri",escape=TRUE)
+kable_styling(tablo1,latex_options = "HOLD_position")
+```
+
+Kategorik değişkenler incelendiğinde tek kategorik değişken olan char değişkeni ile Charles Nehri kukla değişkenidir (yol nehri sınırlıyorsa 1; aksi takdirde 0).
+
+```{r,echo=FALSE, results=TRUE}
+kategorik <- data %>% select(c(chas))
+kategorik_tablo <- tbl_summary(kategorik)
+kategorik_tablo_ <- knitr::kable(kategorik_tablo,col.names=c("Değişken","Sayı ve Yüzde"),caption="Kategorik Verilerin Özet İstatistikleri")
+kable_styling(kategorik_tablo_,latex_options = "HOLD_position")
+```
+
+# Yöntem ve Veri Analizi
+
+Boston'da bulunan evlerin median değerlerini tahmin eden model için multiple linear regresyon modeli kullanılmıştır.  Model ilk olarak değerilendirildiğinde anlamlı bir model olduğu görülmüştür (F(13,174)=78,15, p<0,001).  
+
+Anlamlı bağımsız değişkenler değerlendirildiğinde crim(kişi başına düşen suç oranı), rm (konut başına düşen ortalama oda sayısı9, age (1940'tan önce inşa edilen sahibi tarafından kullanılan birimlerin oranı), dis (beş Boston istihdam merkezine ağırlıklı mesafeler), rad (radyal otoyollara erişilebilirlik indeksi), tax (10.000 $ başına tam değerli emlak vergisi oranı), ptraito (şehre göre öğrenci-öğretmen oranı), b (şehre göre siyahların oranıdır) ve lstat (Nüfusun % alt durumu) değişkenlerinin ev median fiyatlarını açıklamak için anlamlı olduğu görülmüştür.  
+
+Modelin açıklayabilirliği %84,28 olarak bulunmuştur, yani bağımsız değişkenler bağımlı değişkendeki varyansın %84,28'ini açıklamaktadır.  
+
+```{r,echo=FALSE,results=FALSE,warning=FALSE}
+data$chas <- factor(data$chas)
+
+lr_model <- lm(medv~.,data=data)
+summary(lr_model)
+```
+
+Multiple lineer regresyon modeli ise şu şekilde bulundu:
+
+$$
+Ev Median Fyatı= \beta_{0}+\beta_{1}crim+\beta_{2}rm+
+\beta_{3}age+\beta_{4}dis+\beta_{5}rad+\beta_{6}tax+
+\beta_{7}ptratio+\beta_{8}b+\beta_{9}lstat
+$$
+
+Bağımsız değişkenlerin bağımlı değişken üzerine etkisi şöyle açıklanabilir:  
+
+Kişi başına suç oranında 1 birim artında median ev değeri 1484,4 artmaktadır.
+
+Konut başına düşen ortalama oda sayısında 1 birim artında median ev değeri 9131,8 artmaktadır.
+
+1940'tan önce inşa edilen sahibi tarafından kullanılan birimlerin oranında 1 birim artış median ev değerinde 38,9 azalmaya neden olmaktadır.
+
+Beş Boston istihdam merkezine ağırlıklı mesafelerinde 1 birim artış median ev değerinde 1088,676 azalışa neden olmaktadır
+
+Radyal otoyollara erişilebilirlik indeksinde 1 birim artış median ev değerlerinde 484,6 artışa neden olmaktadır.  
+
+10.000 $ başına tam değerli emlak vergisi oranında 1 birim artış median ev değerlerinde 19,1 azalışa neden olmaktadır.  
+
+Şehre göre öğrenci-öğretmen oranında 1 birim artış median ev değerlerinde 647,3 azalışa neden olmaktadır.  
+
+Şehre göre siyahların oranında 1 birim artış median ev değerlerinde 19,4 artışa neden olmaktadır.  
+
+Nüfusun % alt durumunda 1 birim artış median ev değerlerinde 221,3 azalışa neden olmaktadır.  
+
+
+
+Grafikle anlamlı bağımsız değişkenlerin her birinin median ev fiyatları ile  ilişki saçılım grafiği ile incelendiğinde ise:
+
+```{r,echo=FALSE,fig.width=3,fig.height=3}
+ggplot(data,aes(x=crim,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Suç Oranı ve Median Ev Fiyatı Arasındaki İlişki",x="Suç Oranı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=rm,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Oda Sayısı ve Median Ev Fiyatı Arasındaki İlişki",x="Oda Sayısı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=age,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="1940'tan önce inşa edilen sahibi tarafından kullanılan birimlerin oranı ve Median Ev Fiyatı Arasındaki İlişki",x="Birimlerin oranı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=dis,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Beş Boston istihdam merkezine ağırlıklı mesafeler ve Median Ev Fiyatı Arasındaki İlişki",x="Beş Boston istihdam merkezine ağırlıklı mesafeler",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=rad,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Radyal otoyollara erişilebilirlik indeksi ve Median Ev Fiyatı Arasındaki İlişki",x="Radyal otoyollara erişilebilirlik indeksi",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=tax,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="10.000 $ başına tam değerli emlak vergisi oranı ve Median Ev Fiyatı Arasındaki İlişki",x="Emlak vergisi oranı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=ptratio,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Şehre göre öğrenci-öğretmen oranı ve Median Ev Fiyatı Arasındaki İlişki",x="Öğrenci-öğretmen oranı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=b,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Şehre göre öğrenci-öğretmen oranı ve Median Ev Fiyatı Arasındaki İlişki",x="Öğrenci-öğretmen oranı",y="Median Ev Fiyatı")
+
+ggplot(data,aes(x=lstat,y=medv))+geom_point()+geom_smooth(method=lm)+
+  labs(title="Nüfusun % alt durumu ve Median Ev Fiyatı Arasındaki İlişki",x="Nüfusun % alt durumu ",y="Median Ev Fiyatı")
+```
+
+# Tartışma 
+
+Ev fiyatı tahmininde median ev fiyatını etkileyen faktörler olarak suç oranı, ortalama oda sayısı, istihdam yerlerine mesafe, otoyollara erişim, emlak vergisi oranı, öğrenci-öğretmen oranı, sayahların oranı ve alt statüdeki nüfus oranın etkili olduğu görülmektedir.  
+
+\newpage
+# Kaynakça {#references}
+
+The Boston housing dataset. Web sayfası: https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html Erişim tarihi: 14.04.2023
+
+Madhuri, C. R., Anuradha, G., & Pujitha, M. V. (2019, March). House price prediction using regression techniques: A comparative study. In 2019 International conference on smart structures and systems (ICSSS) (pp. 1-5). IEEE.
+
+Harrison Jr, D., & Rubinfeld, D. L. (1978). Hedonic housing prices and the demand for clean air. Journal of environmental economics and management, 5(1), 81-102.
+
+Ozdemi̇r, M., Yildiz, K., & Büyüktanir, B. (2022). Derin Öğrenme ile Konut Fiyat Tahminlemesi: Türkiye’deki Sakarya İli Üzerinde Bir Çalışma. Bilecik Şeyh Edebali Üniversitesi Fen Bilimleri Dergisi. 
+
+Afşar, A., Yılmazel, Ö., & Yılmazel, S. (2018). KONUT FİYAT TAHMİNİNDE YAPAY SİNİR AĞLARI YÖNTEMİNİN KULLANILMASI. Uluslararası İktisadi ve İdari İncelemeler Dergisi. 
+
+<div id="refs"></div>
+
